@@ -1,0 +1,10 @@
+BACKGROUND= "#111111"
+PANEL= "#202020"
+TEXT="#E6E6E6"
+GREEN="#00FF99"
+BUTTON = "#3A3A3A"
+BUTTON_HOVER = "#505050"
+
+FONT=("Consolas", 12)
+TITLE= ("Consolas", 20, "bold")
+FREQUENCY = ("Consolas", 26, "bold")
