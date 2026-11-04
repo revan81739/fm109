@@ -10,74 +10,57 @@ class RadioWindow:
         self.root.configure(bg=theme.BACKGROUND)
         self.frequency = tk.DoubleVar(value=95.0)
         self.build_ui()
+        self.root.bind("<MouseWheel>", self.turn_knob)
 
     def build_ui(self):
         main=tk.Frame(self.root, bg=theme.BACKGROUND)
-
         main.pack(fill="both", expand=True)
-        title= tk.Label(main, text = "FM 109", bg =theme.BACKGROUND, fg=theme.GREEN, font=theme.TITLE)
-        title.pack(pady=15)
-        image = Image.open("assets/radio1.png")
-        image =image.resize((500, 320), Image.Resampling.NEAREST)
-        
-        self.radio_image= ImageTk.PhotoImage(image)
-        
-        image_label =tk.Label(
+
+        self.canvas= tk.Canvas(
             main,
-            image=self.radio_image,
+            width=900,
+            height=620,
             bg=theme.BACKGROUND,
+            highlightthickness=0
         )
-        
-        
-        
-        image_label.pack()
+        self.canvas.pack()
 
-        self.freq_label = tk.Label(
-            main,
-            text= "95.0 MHz",
-            bg = theme.BACKGROUND,
-            fg = theme.TEXT,
-            font =theme.FREQUENCY
-        )
-        self.freq_label.pack(pady=20)
+        image =Image.open("assets/radio2.png")
+        image=image.resize((700, 450), Image.Resampling.NEAREST)
 
-        slider = tk.Scale(
-            main,
-            from_=88.0,
-            to=108.0,
-            orient= "horizontal",
-            resolution = 0.1,
-            variable =self.frequency,
-            command =self.update_frequency,
-            length = 500,
-            bg =theme.PANEL,
-            fg =theme.TEXT,
-            troughcolor = "#444444",
-            highlightthickness =0,
-        )
-        slider.pack()
-
-        self.signal = tk.Label(
-            main,
-            text="Signal: ----------",
-            bg =theme.BACKGROUND,
-            fg=theme.GREEN,
-            font =theme.FONT,
+        self.radio_image = ImageTk.PhotoImage(image)
+        self.canvas.create_image(
+            450,
+            240,
+            image=self.radio_image
         )
 
-        self.signal.pack(pady=15)
-        self.status= tk.Label(
-            main,
-            text="Searching...",
-            bg=theme.BACKGROUND,
-            fg =theme.TEXT,
-            font =theme.FONT,
+        self.frequency_text =self.canvas.create_text(
+            310,
+            220,
+            text="95.0",
+            fill="#8CFFB5",
+            font=("Consolas", 26, "bold")
         )
-        self.status.pack()
 
+
+    def turn_knob(self, event):
+        freq=self.frequency.get()
+        if event.delta > 0:
+            freq +=0.1
+        else:
+            freq -= 0.1
+        freq =max(88.0, min(108.0, freq))
+        self.frequency.set(freq)
+        self.update_frequency(freq)
+    
+    
     def update_frequency(self, value):
         freq = float(value)
-        self.freq_label.config(text=f"{freq:.1f} MHz")
+        self.canvas.itemconfig(
+            self.frequency_text,
+            text=f"{freq:.1f}"
+        )
         
 
         
