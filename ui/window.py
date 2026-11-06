@@ -2,6 +2,8 @@ import tkinter as tk
 from PIL import Image, ImageTk
 from ui import theme
 import math
+from audio.manager import AudioManager
+import pygame
 
 class RadioWindow:
     def __init__(self, root):
@@ -10,6 +12,8 @@ class RadioWindow:
         self.root.geometry("1000x700")
         self.root.configure(bg=theme.BACKGROUND)
         self.frequency = tk.DoubleVar(value=95.0)
+        self.audio =AudioManager()
+        
         self.scale_factor =4
         self.radio_center_x=500
         self.radio_center_y=330
@@ -24,6 +28,9 @@ class RadioWindow:
         self.last_mouse_angle=None
         self.drag_frequency= 95.0
         self.build_ui()
+        self.audio.start_static()
+
+        
 
     def build_ui(self):
         main=tk.Frame(self.root, bg=theme.BACKGROUND)
@@ -161,6 +168,7 @@ class RadioWindow:
             self.frequency_text,
             text=f"{freq:.1f}"
         )
+        self.audio.update_stations(freq)
         self.update_knob()
 
     def update_knob(self):
