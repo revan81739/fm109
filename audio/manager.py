@@ -1,12 +1,14 @@
 import pygame
+import os
+from game.stations import STATIONS
 
 class AudioManager:
     def __init__(self):
         pygame.mixer.init()
+        pygame.mixer.set_num_channels(16)
         self.static=pygame.mixer.Sound("sounds/static.wav")
         self.static.set_volume(0.25)
-
-        self.stations =[]
+        self.station_channels=[]
         self.load_stations()
     def start_static(self):
         self.static.play(loops=-1)
@@ -15,33 +17,26 @@ class AudioManager:
 
 
     def load_stations(self):
-        self.add_station(
-            sound_file="sounds/rock.wav",
-            centre=97.0,
-            radius=1.0
-        )
+        for station in STATIONS:
+            self.add_station(station)
 
-    def add_station(self, sound_file, centre, radius):
-        sound=pygame.mixer.Sound(sound_file)
-        channel=pygame.mixer.find_channel()
+    def add_station(self, station):
+        if not os.path.exists(station.audio_file):
+            print(f"[audio] missing {station.audio_file}, using placeholder timing")
+            if station.required_listen_time <=0:
+                station.required_listen_time=8.0
+            return
+        sound =pygame.mixer.Sound(station.audio_file)
+        if station.required_listen_time<=0:
+            station.required_listen_time=sound.get_length()
 
+        channel =pygame.mixer.find_channel()
         if channel is None:
             raise RuntimeError("No free audio channels")
         channel.play(sound, loops=-1)
         channel.set_volume(0)
-        self.stations.append(
-            {
-                "centre": centre,
-                "radius": radius,
-                "channel": channel
-            }
-        )
+        self.station_channels.append((station, channel))
+       
     def update_stations(self, frequency):
-        for station in self.stations:
-            distance=abs(frequency - station["centre"])
-            if distance>= station["radius"]:
-                volume=0.0
-            else:
-                volume=1-(distance / station["radius"])
-            station["channel"].set_volume(volume) 
-    
+        for station, channel in self.station_channels:
+            channel.set_volume(station.volume_at(frequency))
