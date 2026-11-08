@@ -8,14 +8,14 @@ from audio.manager import AudioManager
 from game.stations import get_station, get_by_name, GATE_STATION, SECRET_CODE
 
 INTRO_TEXT="""\
-You were sent up the Windwhisper Ridge storm lookout to watch the tree line before the season turned\
-The road line was submerged behind you this afternoon
+You were sent up the Windwhisper Ridge storm lookout to watch the tree line before the season turned.\
+ The road line was submerged behind you this afternoon
 
-The generator is dead. The phone line is silent\
-All you have is this old radio
+The generator is dead. The phone line is silent.\
+ All you have is this old radio
 
-Since the air pressure changed, it's been picking up things it shouldnt be\
-Weather broadcasts from 30 years ago. Songs from another era. Conversations, bleeding into the signal
+Since the air pressure changed, it's been picking up things it shouldnt be.\
+ Weather broadcasts from 30 years ago. Songs from another era. Conversations, bleeding into the signal
 
 Someone is trying to tell you something
 
