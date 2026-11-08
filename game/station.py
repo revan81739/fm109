@@ -1,25 +1,24 @@
 from dataclasses import dataclass, field
-LISTEN_VOLUME=0.25
+STATION_WIDTH=1.6
 
 @dataclass
 class Station:
+    name= str
     frequency: float
-    audio_file: str=""
-    required_listen_time: float=0.0
-    radius: float=0.6
+    audio_files: list[str]
     journal_text: str=""
-    next_frequencies: list[float]=field(default_factory=list)
+    width: float= STATION_WIDTH
     requirements: list[str]=field(default_factory=list)
-    discovered: bool =False
-    listen_progress: float=0.0
+    total_lenth: float=0.0
     heard_fully: bool=False
     transcribed: bool=False
 
     @property
+    def end(self):
+        return self.frequency + self.width
+
+    @property
     def loggable(self):
         return bool(self.journal_text.strip())
-    def volume_at(self, freq):
-        distance= abs(freq - self.frequency)
-        if distance >= self.radius:
-            return 0.0
-        return 1.0 -(distance / self.radius)
+    def contains(self, freq):
+        return self.frequency - 1e-9 <= freq <= self.end + 1e-9

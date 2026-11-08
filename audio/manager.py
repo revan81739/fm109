@@ -1,42 +1,67 @@
 import pygame
 import os
-from game.stations import STATIONS
+import time
+from game.stations import STATIONS, get_station
+STATIC_IDLE=0.25
+STATIC_ON_STATION=0.3
 
 class AudioManager:
     def __init__(self):
         pygame.mixer.init()
-        pygame.mixer.set_num_channels(16)
+        pygame.mixer.set_num_channels(8)
+        pygame.mixer.set_reserved(2)
+
         self.static=pygame.mixer.Sound("sounds/static.wav")
-        self.static.set_volume(0.25)
-        self.station_channels=[]
+        self.static_channel=pygame.mixer.Channel(0)
+        self.station_channel=pygame.mixer.Channel(1)
+        self.sounds={}
+        self.active_station=None
+        self.active_started
         self.load_stations()
+
+
     def start_static(self):
-        self.static.play(loops=-1)
+        self.static_channel.play(self.static, loops=-1)
+        self.static_channel.set_volume(STATIC_IDLE)
     def stop_static(self):
-        self.static.stop()
+        self.static_channel.stop()
 
 
     def load_stations(self):
         for station in STATIONS:
-            self.add_station(station)
+            loaded=[]
+            for path in station.audio_files:
+                if os.path.exists(path):
+                    loaded.append(pygame.mixer.SOund(path))
+                else:
+                    print(f"[audio] missing {path}")
+                self.sounds[station.name]=loaded
+                station.total_length=(
+                    sum(s.get_length() for s in loaded) if loaded else 8.0
+                )
 
-    def add_station(self, station):
-        if not os.path.exists(station.audio_file):
-            print(f"[audio] missing {station.audio_file}, using placeholder timing")
-            if station.required_listen_time <=0:
-                station.required_listen_time=8.0
-            return
-        sound =pygame.mixer.Sound(station.audio_file)
-        if station.required_listen_time<=0:
-            station.required_listen_time=sound.get_length()
 
-        channel =pygame.mixer.find_channel()
-        if channel is None:
-            raise RuntimeError("No free audio channels")
-        channel.play(sound, loops=-1)
-        channel.set_volume(0)
-        self.station_channels.append((station, channel))
-       
-    def update_stations(self, frequency):
-        for station, channel in self.station_channels:
-            channel.set_volume(station.volume_at(frequency))
+    def tune(self, frequency):
+        station=get_station(frequency)
+        if station is self.active_station:
+            return station
+        self.station_channel.stop()
+        self.active_station=station
+
+        if station is None:
+            self.static_channel.set_volume(STATIC_IDLE)
+            return None
+        sounds=self.sounds[station.name]
+
+        if sounds:
+            self.station_channel.play(sounds[0])
+            for extra in sounds[1:]:
+                self.station_channel.queue(extra)
+        self.active_started=time.monotonic()
+        self.static_channel.set_volume(STATIC_ON_STATION)
+        return station
+    def elapsed(self):
+        if self.active_station is None:
+            return 0.0
+        return time.monotonic() - self.active_started
+    

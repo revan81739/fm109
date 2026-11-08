@@ -148,8 +148,30 @@ class RadioWindow:
          )
         self.update_knob()
 
+    def draw_log_button(self):
+        self.log_button= tk.Button(
+            self.canvas,
+            text="Log Transmission",
+            command=self.transcribe_current,
+            bg=theme.BUTTON,
+            fg=theme.GREEN,
+            activebackground=theme.BUTTON_HOVER,
+            activeforeground=theme.GREEN,
+            font=("Consolas", 11, "bold"),
+            relief="flat",
+            padx=12,
+            pady=4,
+            cursor="hand2"
+        )
+        self.log_button_window=self.canvas.create_window(
+            self.log_button_x,
+            self.log_button_y,
+            window=self.log_button,
+            state="hidden"
+        )
+
     def show_intro(self):
-        win=tk.TopLevel(self.root)
+        win=tk.Toplevel(self.root)
         self.intro_win=win
         win.title("Windwhisper Ridge Lookout")
         win.configure(bg=theme.PANEL)
@@ -200,7 +222,7 @@ class RadioWindow:
         ).pack(pady=14)
         win.protocol("WM_DELETE_WINDOW", self.close_intro)
         win.grab_set()
-        win.focus_Set()
+        win.focus_set()
     
     def close_intro(self):
         self.intro_win.grab_release()
@@ -299,7 +321,7 @@ class RadioWindow:
             station and station.loggable
             and station.heard_fully and not station.transcribed
         )
-        self.canavs.itemconfigure(
+        self.canvas.itemconfigure(
             self.log_button_window,
             state="normal" if can_log else "hidden"
         )

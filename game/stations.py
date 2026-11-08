@@ -1,31 +1,65 @@
-from game.station import Station, LISTEN_VOLUME
+from game.station import Station
+GATE_STATION="weather"
+SECRET_CODE="00000"
+
+
 STATIONS=[
-    Station(
-        frequency=92.0,
-        audio_file="sounds/92.wav",
-        required_listen_time=4,
-        journal_text="105.0-go there-write the numbers down",
-        next_frequencies=[105.0]
-    ),
-    Station(
-        frequency=105.0,
-        audio_file="sounds/105.wav",
-        required_listen_time=5,
-        journal_text="19_6-what was that third number???",
-        next_frequencies=[92.0]
-    ),
-    Station(
-        frequency=97.0,
-        audio_file="sounds/rock.wav",
-        radius=0.6
-    ),
+   Station(
+       name="music",
+       frequency="89.0",
+       audio_files=["sounds/music.wav"],
+       requirements=[GATE_STATION],
+   ),
+   Station(
+       name="weather",
+       frequency=91.0,
+       audio_files=["sounds/weather.wav", "sounds/entercode.wav"],
+       journal_text="todo",
+   ),
+   Station(
+       name="jazz",
+       frequency=93.0,
+       audio_files=["sounds/jazz.wav"],
+       requirements=[GATE_STATION],
+   ),
+   Station(
+       name="commercial",
+       frequency=95.0,
+       audio_files=["sounds/commercial.wav"],
+       journal_text="todo",
+       requirements=[GATE_STATION],
+   ),
+   Station(
+       name="hurricane",
+       frequency=97.0,
+       audio_files=["sounds/hurricane.wav"],
+       journal_text="todo",
+       requirements=[GATE_STATION],
+   ),
+   Station(
+       name="numbers",
+       frequency=99.0,
+       audio_files=["sounds/numbers.wav"],
+       journal_text="todo",
+       requirements=[GATE_STATION],
+   ),
+   Station(
+       name="silentnight",
+       frequency=101.0,
+       audio_files=["soounds/silentnight.wav"],
+       requirements=[GATE_STATION],
+   ),
 ]
 
-def get_station(frequency):
-    best=None
-    best_volume=0.0
+def get_by_name(name):
     for station in STATIONS:
-        volume=station.volume_at(frequency)
-        if volume >= LISTEN_VOLUME and volume >best_volume:
-            best, best_volume =station, volume
-    return best
+        if station.name == name:
+            return station
+    return None
+def is_unlocked(station):
+    return all(get_by_name(r).transcribed for r in station.requirements)
+def get_station(frequency):
+    for station in STATIONS:
+        if station.contains(frequency) and is_unlocked(station):
+            return station
+    return None
