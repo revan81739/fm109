@@ -2,6 +2,7 @@ import pygame
 import os
 import time
 from game.stations import STATIONS, get_station
+from game.paths import resource_path
 STATIC_IDLE=0.25
 STATIC_ON_STATION=0.3
 
@@ -11,7 +12,7 @@ class AudioManager:
         pygame.mixer.set_num_channels(8)
         pygame.mixer.set_reserved(2)
 
-        self.static=pygame.mixer.Sound("sounds/static.wav")
+        self.static=pygame.mixer.Sound(resource_path("sounds/static.wav"))
         self.static_channel=pygame.mixer.Channel(0)
         self.station_channel=pygame.mixer.Channel(1)
         self.sounds={}
@@ -31,10 +32,12 @@ class AudioManager:
         for station in STATIONS:
             loaded=[]
             for path in station.audio_files:
-                if os.path.exists(path):
-                    loaded.append(pygame.mixer.Sound(path))
+                full_path=resource_path(path)
+                
+                if os.path.exists(full_path):
+                    loaded.append(pygame.mixer.Sound(full_path))
                 else:
-                    print(f"[audio] missing {path}")
+                    print(f"[audio] missing {full_path}")
                 self.sounds[station.name]=loaded
                 station.total_length=(
                     sum(s.get_length() for s in loaded) if loaded else 8.0

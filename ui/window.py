@@ -1,4 +1,5 @@
 import tkinter as tk
+from game.paths import resource_path
 from PIL import Image, ImageTk
 from tkinter import scrolledtext
 from ui import theme
@@ -92,7 +93,7 @@ class RadioWindow:
         self.journal_area.pack(fill="both", expand=True, padx=5, pady=5)
         
     def draw_radio(self):
-        image=Image.open("assets/radio2.png")
+        image=Image.open(resource_path("assets/radio2.png"))
         
         width=image.width * self.scale_factor
         height=image.height*self.scale_factor
@@ -116,7 +117,7 @@ class RadioWindow:
         )
 
     def draw_knob(self):
-        sheet =Image.open("assets/knobsheet2.png").convert("RGBA")
+        sheet =Image.open(resource_path("assets/knobsheet2.png")).convert("RGBA")
         base_frame_width=128
         self.knob_frame_count=sheet.width // base_frame_width
         frame_width=base_frame_width
