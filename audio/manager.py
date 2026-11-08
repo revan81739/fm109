@@ -16,7 +16,7 @@ class AudioManager:
         self.station_channel=pygame.mixer.Channel(1)
         self.sounds={}
         self.active_station=None
-        self.active_started
+        self.active_started=0.0
         self.load_stations()
 
 
@@ -32,7 +32,7 @@ class AudioManager:
             loaded=[]
             for path in station.audio_files:
                 if os.path.exists(path):
-                    loaded.append(pygame.mixer.SOund(path))
+                    loaded.append(pygame.mixer.Sound(path))
                 else:
                     print(f"[audio] missing {path}")
                 self.sounds[station.name]=loaded

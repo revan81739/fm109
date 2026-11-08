@@ -5,7 +5,7 @@ from ui import theme
 import math
 import time
 from audio.manager import AudioManager
-from game.stations import STATIONS, get_station
+from game.stations import get_station, get_by_name, GATE_STATION, SECRET_CODE
 
 INTRO_TEXT="""\
 You were sent up the Windwhisper Ridge storm lookout to watch the tree line before the season turned\
@@ -43,6 +43,9 @@ class RadioWindow:
         self.dragging = False
         self.last_mouse_angle=None
         self.drag_frequency= 95.0
+        self.code_panel_x=980
+        self.code_panel_y= 20
+        self.code_solved=False
         self.log_button_x=430
         self.log_button_y=365
         self.current_station =None
@@ -68,6 +71,7 @@ class RadioWindow:
         self.draw_screen()
         self.draw_knob()
         self.draw_log_button()
+        self.draw_code_panel()
         journal_frame =tk.LabelFrame(
             main,
             text=" Storm lookout logs",
@@ -147,7 +151,6 @@ class RadioWindow:
             image=self.knob_frames[0]
          )
         self.update_knob()
-
     def draw_log_button(self):
         self.log_button= tk.Button(
             self.canvas,
@@ -228,10 +231,11 @@ class RadioWindow:
         self.intro_win.grab_release()
         self.intro_win.destroy()
         self.audio.start_static()
-        self.audio.update_stations(self.frequency.get())
+        self.audio.tune(round(self.frequency.get(), 1))
         self.last_check_time= time.monotonic()
         self.check_station_timer()
-        
+
+
     def start_drag(self, event):
         mouse_x= self.canvas.canvasx(event.x)
         mouse_y =self.canvas.canvasy(event.y)
@@ -286,7 +290,7 @@ class RadioWindow:
             self.frequency_text,
             text=f"{freq:.1f}"
         )
-        self.audio.update_stations(freq)
+        self.audio.tune(freq)
         self.update_knob()
 
     def update_knob(self):
@@ -305,17 +309,13 @@ class RadioWindow:
         )
 
     def check_station_timer(self):
-        now= time.monotonic()
-        delta_time =min(now - self.last_check_time, 0.5)
-        self.last_check_time= now
-        station =get_station(round(self.frequency.get(), 1))
+        station=self.audio.tune(round(self.frequency.get(), 1))
         self.current_station= station
+
         if (station and station.loggable
-            and not station.transcribed
-            and not station.heard_fully):
-            station.listen_progress += delta_time
-            if station.listen_progress >= station.required_listen_Time:
-                station.heard_fully =True
+            and not station.heard_fully
+            and self.audio.elapsed() >= station.total_length):
+            station.heard_fully = True
 
         can_log= bool(
             station and station.loggable
@@ -325,14 +325,18 @@ class RadioWindow:
             self.log_button_window,
             state="normal" if can_log else "hidden"
         )
-
+        self.root.after(100, self.check_station_timer)
+        
     def transcribe_current(self):
-        station =self.current_station
+        station= self.current_station
         if not station or not station.heard_fully or station.transcribed:
             return
         station.transcribed=True
         self.add_journal_entry(station.frequency, station.journal_text)
         self.canvas.itemconfigure(self.log_button_window, state="hidden")
+
+        if station.name == GATE_STATION:
+            self.unlock_code_panel()
 
     def add_journal_entry(self, freq, text):
         self.journal_area.config(state="normal")
@@ -340,3 +344,98 @@ class RadioWindow:
         self.journal_area.insert(tk.END, entry)
         self.journal_area.see(tk.END)
         self.journal_area.config(state="disabled")
+
+    def draw_code_panel(self):
+        panel=tk.Frame(
+            self.canvas,
+            bg=theme.PANEL,
+            highlightbackground=theme.GREEN,
+            highlightthickness=1,
+            padx=14,
+            pady=10
+
+        )
+        tk.Label(
+            panel, text="TOWER LOCKBOX", bg=theme.PANEL,
+            fg=theme.GREEN, font=("Consolas", 12, "bold")
+        ).pack(pady=(0, 6))
+
+        vcmd= (self.root.register(self.validate_code), "%P")
+        self.code_entry =tk.Entry(
+            panel,
+            widt=5,
+            justify="center",
+            font=("Consolas", 26, "bold"),
+            bg="#111111",
+            fg=theme.GREEN,
+            insertbackground=theme.GREEN,
+            relief="flat",
+            validate="key",
+            validatecommand=vcmd
+        )
+        self.code_entry.pack(pady=4)
+        self.code_entry.bind("<Return>", lambda e: self.submit_code())
+
+        self.code_button =tk.Button(
+            panel,
+            text="ENTER CODE",
+            command=self.submit_code,
+            bg=theme.BUTTON,
+            fg=theme.GREEN,
+            activebackground=theme.BUTTON_HOVER,
+            activeforeground=theme.GREEN,
+            font=("Consolas", 11, "bold"),
+            relief="flat",
+            padx=12,
+            pady=4,
+            cursor="hand2"
+        )
+        self.code_button.pack(pady=6)
+        self.code_feedback= tk.Label(
+            panel, text="", bg=theme.PANEL,
+            fg=theme.TEXT, font=("Consolas", 10)
+        )
+        self.code_feedback.pack()
+        self.code_panel_window= self.canvas.create_window(
+            self.code_panel_x,
+            self.code_panel_y,
+            window=panel,
+            anchor="ne",
+            state="hidden"
+        )
+    def validate_code(self, new_value):
+        return new_value =="" or (
+            new_value.isascii() and new_value.isdigit() and len(new_value) <=5
+        )
+    
+    def unlock_code_panel(self):
+        self.canvas.itemconfigure(self.code_panel_window, state="normal")
+        self.add_system_note(
+            "More voices are bleeding through."
+            " The lockbox keypad is live."
+        )
+
+    def submit_code(self):
+        if self.code_solved:
+            return
+        code= self.code_entry.get()
+        if len(code) != 5:
+            self.code_feedback.config(text="Enter all 5 digits", fg=theme.TEXT)
+            return
+        if sorted(code) == sorted(SECRET_CODE):
+            self.code_solved = True
+            self.code_feedback.config(text="ACCESS GRANTED", fg=theme.GREEN)
+            self.code_entry.config(state="disabled")
+            self.code_button.config(state="disabled")
+            self.on_code_solved()
+        else:
+            self.code_feedback.config(text="INCORRECT", fg="#FF5555")
+            self.code_entry.delete(0, tk.END)
+    def on_code_solved(self):
+        self.add_system_note("The lockbox opens.....")
+    def add_system_note(self, text):
+        self.journal_area.config(state="normal")
+        self.journal_area.insert(tk.END, f"[ ! ] {text}\n\n")
+        self.journal_area.see(tk.END)
+        self.journal_area.config(state="disabled")
+#am i him???

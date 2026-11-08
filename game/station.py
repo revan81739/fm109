@@ -3,7 +3,7 @@ STATION_WIDTH=1.6
 
 @dataclass
 class Station:
-    name= str
+    name: str
     frequency: float
     audio_files: list[str]
     journal_text: str=""
